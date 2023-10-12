@@ -10,7 +10,16 @@ const signToken = id => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: pr
 
 const createAndSendToken = (user, statusCode, res) => {
     const token = signToken(user._id);
+    const optionsObject = {
+        httpOnly: true,
+        expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000)
+    };
 
+    if (process.env.NODE_ENV === "production") optionsObject.secure = true;
+
+    res.cookie("jwt", token, optionsObject);
+
+    user.password = undefined;
     res.status(statusCode).json({
         status: "success",
         token,
@@ -25,8 +34,7 @@ exports.signup = catchAsync(async (req, res, next) => {
         name: req.body.name,
         email: req.body.email,
         password: req.body.password,
-        passwordConfirm: req.body.passwordConfirm,
-        role: req.body.role
+        passwordConfirm: req.body.passwordConfirm
     });
 
     createAndSendToken(newUser, 200, res);
